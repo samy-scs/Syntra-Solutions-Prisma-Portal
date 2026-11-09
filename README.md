@@ -10,9 +10,9 @@ O **Prisma Portal** é uma plataforma web corporativa desenvolvida para centrali
 
 Clique no botão abaixo para testar a aplicação online:
 
-[![Acessar Prisma Portal](https://img.shields.io/badge/🚀_Acessar_Prisma_Portal-Clique_Aqui-5b3df5?style=for-the-badge)](https://samilasouza.github.io/Syntra-Solutions-Prisma-Portal/)
+[![Acessar Prisma Portal](https://img.shields.io/badge/🚀_Acessar_Prisma_Portal-Clique_Aqui-5b3df5?style=for-the-badge)](https://samy-scs.github.io/Syntra-Solutions-Prisma-Portal/)
 
-> 🔗 **Link direto:** https://samilasouza.github.io/Syntra-Solutions-Prisma-Portal/
+> 🔗 **Link direto:** https://samy-scs.github.io/Syntra-Solutions-Prisma-Portal/
 
 ---
 
@@ -33,4 +33,4 @@ Este é um projeto corporativo de demonstração (**Empresa Teste**) focado em d
 
 1. **Clone o repositório:**
    ```bash
-   git clone [https://github.com/samilasouza/Syntra-Solutions-Prisma-Portal.git](https://github.com/samilasouza/Syntra-Solutions-Prisma-Portal.git)
+   git clone [https://github.com/samy-scs/Syntra-Solutions-Prisma-Portal.git](https://github.com/samy-scs/Syntra-Solutions-Prisma-Portal.git)
