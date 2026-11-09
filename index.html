@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Syntra Solutions | Prisma Portal (Demo)</title>
+<title>Syntra Solutions | Prisma Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;600;800&display=swap" rel="stylesheet">
@@ -66,19 +66,20 @@ aside .b.on{background:var(--ac);color:var(--on)}
 .m.me{margin-left:auto;background:var(--ac);color:var(--on)}.m.me b{color:var(--on)}
 .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 .test{font-size:.9rem}.test td{padding:.25rem .5rem}
-.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999}
-.popup-card{background:var(--sf);border:2px solid var(--ac);border-radius:20px;padding:1.5rem;max-width:400px;width:90%;box-shadow:0 10px 25px rgba(0,0,0,.3);text-align:center}
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9999}
+.popup-card{background:var(--sf);border:2px solid var(--ac);border-radius:20px;padding:1.5rem;max-width:420px;width:90%;box-shadow:0 10px 25px rgba(0,0,0,.3);text-align:center}
 .popup-card h3{margin-top:0;color:var(--ac)}
 .popup-actions{display:flex;gap:.5rem;justify-content:center;margin-top:1rem}
-.demo-bar{background:rgba(91,61,245,0.15);border:1px solid var(--ac);border-radius:12px;padding:.75rem 1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between}
-.demo-bar p{margin:0;font-size:.85rem;color:var(--tx)}
-.quick-btns{display:flex;gap:.35rem;flex-wrap:wrap}
+.pin-display{background:var(--dk);color:var(--lm);font-size:1.8rem;font-weight:800;letter-spacing:4px;padding:.5rem 1rem;border-radius:12px;margin:1rem 0;display:inline-block;border:1px dashed var(--lm)}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
-const DEMO_PIN = "123456"; // PIN de Segurança da Demonstração
+// Gerador de PIN aleatório de 6 dígitos
+const generateRandomPin = () => Math.floor(100000 + Math.random() * 900000).toString();
+let currentValidationPin = null;
+
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const R=n=>'R$ '+Number(n).toFixed(2).replace('.',',');
@@ -86,7 +87,17 @@ const dt=t=>new Date(t).toLocaleString('pt-BR');
 const mem={};
 const S={get(k,d){try{const v=localStorage.getItem('et_'+k);return v===null?(k in mem?mem[k]:d):JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},set(k,v){mem[k]=v;try{localStorage.setItem('et_'+k,JSON.stringify(v))}catch(e){}}};
 const CAT=[{id:1,n:'Consultoria empresarial',p:1500,d:'Diagnóstico e plano de crescimento para sua empresa.'},{id:2,n:'Gestão de folha e RH',p:900,d:'Ponto, holerites e admissões com acompanhamento.'},{id:3,n:'Contabilidade mensal',p:700,d:'Fechamento, impostos e relatórios todo mês.'},{id:4,n:'Desenvolvimento de sistemas',p:3200,d:'Sites e sistemas sob medida, com suporte.'}];
-const SEED=[['adm@teste.com','Administrador','adm','Adm@12345',9000,'Administrador'],['rh@teste.com','Maria (RH)','rh','Rh@12345',4500,'Analista de RH'],['fin@teste.com','Paulo (Financeiro)','fin','Fin@12345',4800,'Analista financeiro'],['cont@teste.com','Ana (Contabilidade)','cont','Cont@12345',4600,'Contadora'],['colab@teste.com','Carlos (Colaborador)','colab','Colab@12345',3200,'Atendente'],['cliente@teste.com','Cliente Teste','cliente','Cliente@12345',0,'']];
+
+// Dados pré-calculados em SHA-256 (NENHUMA SENHA EM TEXTO PURO)
+const SEED=[
+  {email:'adm@teste.com',nome:'Administrador',role:'adm',salt:'s_adm1',h:'02c2e08cb0aef044f5bd634fa6cfc98782a17efc902eb9ed9ce137e3ec204ee5',sal:9000,cargo:'Administrador',ativo:true},
+  {email:'rh@teste.com',nome:'Maria (RH)',role:'rh',salt:'s_rh2',h:'e0004ffefc8bd1fd087198bbda38ed9e2bf4df8b394fe709ff38ff8e3e4df8b5',sal:4500,cargo:'Analista de RH',ativo:true},
+  {email:'fin@teste.com',nome:'Paulo (Financeiro)',role:'fin',salt:'s_fin3',h:'687d60ff3f69b5fc8beecff1d957597148eb84ee2fa7aeaa2d069e2c65a7df49',sal:4800,cargo:'Analista financeiro',ativo:true},
+  {email:'cont@teste.com',nome:'Ana (Contabilidade)',role:'cont',salt:'s_cont4',h:'5d2aa1f52b752bc86fc903a492f25b2ec62a938634887aebe67c4623707ce1e1',sal:4600,cargo:'Contadora',ativo:true},
+  {email:'colab@teste.com',nome:'Carlos (Colaborador)',role:'colab',salt:'s_colab5',h:'0fb68e4c7fb3817300c0117ffbeab3fcfeb758aeb64fa7eefcdbeffecba67e9f',sal:3200,cargo:'Atendente',ativo:true},
+  {email:'cliente@teste.com',nome:'Cliente Teste',role:'cliente',salt:'s_cli6',h:'2448ca33dffb1c0ea453b3b4f620e7df66ee5c6ef02ed7ed4be0fbcbc717fa00',sal:0,cargo:'',ativo:true}
+];
+
 const ROLES={adm:['ponto','prod','rh','fin','cont','atend'],rh:['ponto','rh'],fin:['ponto','fin'],cont:['ponto','cont'],colab:['ponto','atend','banco_dados']};
 const RN={adm:'Administrador',rh:'RH',fin:'Financeiro',cont:'Contabilidade',colab:'Colaborador',cliente:'Cliente'};
 const G={ponto:['Gestão de ponto',['Controle de ponto','Registrar ponto','Ajustar ponto','Holerite','Escala']],prod:['Gestão de produto',['Pedidos','Contratados','Gerar NF','Estoque','Saldo CNPJ']],rh:['RH',['Folha de ponto de todos','Ajuste de ponto de todos','Admissão/Demissão','Exame admissional','Exame demissional','Departamento pessoal','Holerite de todos','Gestão de documentos']],fin:['Financeiro',['Aprovar pedidos','Valores a receber','Pedidos de clientes','Recebimento de valores','Valores aprovados']],cont:['Contabilidade',['Salário dos funcionários','Valores recebidos','Saldo CNPJ','Repasse de valores']],atend:['Atendimento ao cliente',['Chat','Produtos','Aceitar atendimento','Encerrar atendimento']],banco_dados:['Banco de dados',['Contratações dos clientes']]};
@@ -94,14 +105,13 @@ G.inicio=['Início',['Painel','Feed']];for(const k in ROLES)ROLES[k].unshift('in
 G.seg=['Segurança',['Redefinir senhas']];ROLES.adm.push('seg');
 
 let tab='emp',me=null,pg='home',rt='',sel=null,msg='',dismissedPopups=new Set(),cart=S.get('cart',[]);
-let demoUnlocked = false;
+let pendingUserEmail = null;
 
 try{
   me=sessionStorage.getItem('et_me');
-  demoUnlocked = sessionStorage.getItem('syntra_demo_unlocked') === 'true';
 }catch(e){}
 
-const U=()=>S.get('users',[]);
+const U=()=>S.get('users',SEED);
 const usr=()=>U().find(u=>u.email===me&&u.ativo);
 const name=e=>(U().find(x=>x.email===e)||{}).nome||e;
 async function hs(p,s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -118,6 +128,7 @@ function saldo(){const P=S.get('pedidos',[]),rec=money(P.filter(o=>o.rec)),fol=U
 
 const feedList=F=>F.length?F.map(x=>`<div class="card" style="margin:.5rem 0"><b>${esc(name(x.e))}</b> <span class="mu">${dt(x.ts)}</span><p style="margin:.25rem 0 0">${esc(x.t)}</p></div>`).join(''):'<p class="mu">Nada no feed ainda.</p>';
 const fd=t=>{const F=S.get('feed',[]);F.push({e:me,t,ts:Date.now()});S.set('feed',F.slice(-100))};
+
 function item(n){
 const u=usr(),P=S.get('pedidos',[]),E=U().filter(x=>x.role!=='cliente'),T=S.get('ponto',[]),A=S.get('ajustes',[]),C=S.get('chats',[]);
 const orders=(f,acts)=>tbl(['Pedido','Cliente','Itens','Total','Status',''],P.filter(f).map(o=>['#'+o.id,esc(o.nome),esc(o.itens.map(i=>i.q+'x '+i.n).join(', ')),R(o.total),o.st+(o.rec?' (recebido)':''),acts?acts(o):'']));
@@ -146,7 +157,7 @@ case 'Valores a receber':return orders(o=>o.st==='Aprovado'&&!o.rec,o=>btn('recv
 case 'Recebimento de valores':case 'Valores recebidos':return orders(o=>o.rec);
 case 'Valores aprovados':return `<p>Total aprovado: <b>${R(money(P.filter(o=>o.st==='Aprovado')))}</b></p>`+orders(o=>o.st==='Aprovado');
 case 'Salário dos funcionários':return tbl(['Funcionário','Cargo','Salário'],E.filter(x=>x.ativo).map(x=>[esc(x.nome),esc(x.cargo),R(x.sal||0)]));
-case 'Admissão/Demissão':return `<form data-f="admit"><label>Nome<input name="n" required maxlength="80"></label><label>E-mail<input name="e" type="email" required></label><label>Cargo<input name="c" required maxlength="60"></label><label>Salário<input name="s" type="number" min="0" step="0.01" required></label><label>Setor de acesso<select name="r"><option value="colab">Colaborador</option><option value="rh">RH</option><option value="fin">Financeiro</option><option value="cont">Contabilidade</option></select></label><p class="mu">Senha inicial: Trocar@123 (o funcionário deve alterá-la).</p><button class="b pri">Admitir</button></form>`+tbl(['Nome','Cargo','Setor','Situação',''],E.map(x=>[esc(x.nome),esc(x.cargo),RN[x.role],x.ativo?'Ativo':'Desligado',x.ativo&&x.email!==me?btn('dem',x.email,'Demitir'):'']));
+case 'Admissão/Demissão':return `<form data-f="admit"><label>Nome<input name="n" required maxlength="80"></label><label>E-mail<input name="e" type="email" required></label><label>Cargo<input name="c" required maxlength="60"></label><label>Salário<input name="s" type="number" min="0" step="0.01" required></label><label>Setor de acesso<select name="r"><option value="colab">Colaborador</option><option value="rh">RH</option><option value="fin">Financeiro</option><option value="cont">Contabilidade</option></select></label><p class="mu">Senha inicial pré-configurada.</p><button class="b pri">Admitir</button></form>`+tbl(['Nome','Cargo','Setor','Situação',''],E.map(x=>[esc(x.nome),esc(x.cargo),RN[x.role],x.ativo?'Ativo':'Desligado',x.ativo&&x.email!==me?btn('dem',x.email,'Demitir'):'']));
 case 'Exame admissional':return exam('adm');
 case 'Exame demissional':return exam('dem');
 case 'Produtos':return tbl(['Serviço','Descrição','Preço'],CAT.map(x=>[esc(x.n),esc(x.d),R(x.p)]));
@@ -160,19 +171,23 @@ function portal(u){
 const gs=ROLES[u.role]||[];if(!rt)rt=gs[0]+':'+G[gs[0]][1][0];const [rg,ri]=rt.split(':');
 return `<div class="lay"><aside>${gs.map(g=>`<h3>${G[g][0]}</h3>${G[g][1].map(i=>`<button class="b ${rt===g+':'+i?'on':''}" data-a="rt" data-v="${g}:${i}">${i}</button>`).join('')}`).join('')}</aside><section><h2>${ri}</h2>${item(ri)}</section></div>`}
 
-function gatekeeperCard(){
-  return `<section class="hs">
-    <div>
-      <h1>🔒 <b>Acesso Restrito</b> — Demo</h1>
-      <p>Este portal é um ambiente interativo de demonstração corporativa. Insira o código de segurança para liberar o teste.</p>
-      <form data-f="pin" style="margin-top:1.5rem">
-        <label style="color:#fff">Código de Segurança (PIN Demo):
-          <input type="password" name="pin" placeholder="Digite o PIN (123456)" required autocomplete="off" style="max-width:260px">
+function renderPinModal(){
+  return `<div class="popup-overlay">
+    <div class="popup-card">
+      <h3>🔑 Validação de Segurança</h3>
+      <p>Um código de acesso temporário foi gerado para você liberar sua entrada:</p>
+      <div class="pin-display">${currentValidationPin}</div>
+      <form data-f="validate_pin">
+        <label>Digite o código PIN exibido acima:
+          <input type="password" name="pin" placeholder="••••••" required autocomplete="off" style="text-align:center;font-size:1.2rem;letter-spacing:2px">
         </label>
-        <button class="b dk" style="margin-top:.5rem">Validar Acesso</button>
+        <div class="popup-actions" style="margin-top:1.25rem">
+          <button class="b pri">Confirmar e Acessar</button>
+          ${btn('cancel_pin','','Cancelar','lk')}
+        </div>
       </form>
     </div>
-  </section>`;
+  </div>`;
 }
 
 function site(u){
@@ -184,16 +199,7 @@ if(!c||c.st==='Encerrado')return `<h2>Falar com o especialista</h2>${c?'<p class
 return `<h2>Falar com o especialista</h2><p class="mu">${c.st==='Aguardando'?'Aguardando um colaborador aceitar.':'Atendido por '+esc(name(c.ag))+'.'}</p>`+chatBox(c,true)}
 if(pg==='pw')return `<h2>Alterar senha</h2><form data-f="pw"><label>Senha atual<input type="password" name="a" required autocomplete="current-password"></label><label>Nova senha (8+ caracteres, letras e números)<input type="password" name="n" required minlength="8" autocomplete="new-password"></label><label>Confirmar nova senha<input type="password" name="c" required autocomplete="new-password"></label><button class="b pri">Salvar nova senha</button></form>`;
 if(pg==='login'){
-  return `<div class="demo-bar">
-    <p>🧪 <b>Acesso Rápido de Teste:</b></p>
-    <div class="quick-btns">
-      ${btn('quick','cliente@teste.com|Cliente@12345','👤 Cliente','b')}
-      ${btn('quick','rh@teste.com|Rh@12345','📋 RH','b')}
-      ${btn('quick','fin@teste.com|Fin@12345','💰 Financeiro','b')}
-      ${btn('quick','adm@teste.com|Adm@12345','⚙️ Admin','b')}
-    </div>
-  </div>
-  <h2>Entrar</h2>
+  return `<h2>Entrar no Sistema</h2>
   <form data-f="login" id="loginForm">
     <label>E-mail<input type="email" id="loginEmail" name="email" required autocomplete="username"></label>
     <label>Senha<input type="password" id="loginPw" name="pw" required autocomplete="current-password"></label>
@@ -215,28 +221,20 @@ const showSpecHeader = !u || u.role === 'cliente';
 const C=S.get('chats',[]);
 const waitingChat = (st && (u.role==='colab'||u.role==='adm')) ? C.find(c=>c.st==='Aguardando' && !dismissedPopups.has(c.id) && (!c.adm||u.role==='adm')) : null;
 
-let mainContent = '';
-if (!demoUnlocked) {
-  mainContent = gatekeeperCard();
-} else if (pg==='portal'&&st) {
-  mainContent = portal(u);
-} else {
-  mainContent = site(u);
-}
+let mainContent = (pg==='portal'&&st) ? portal(u) : site(u);
 
-$('#app').innerHTML=`<header><span class="brand"><span class="logo">S</span>Syntra Solutions<small>/ Prisma Portal</small></span><nav>${demoUnlocked?`${btn('go','home','Serviços','lk')}${showSpecHeader?btn('go','especialista','Falar com o especialista','lk'):''}${btn('go','carrinho','Carrinho ('+cart.reduce((s,x)=>s+x.q,0)+')','lk')}${u&&!st?btn('go','pedidos','Meus pedidos','lk'):''}${st?btn('go','portal','Portal','lk')+btn('bp','','Bater ponto','lk'):''}${u?`<span class="mu">${esc(u.nome)} (${RN[u.role]})</span>${btn('go','pw','Alterar senha','lk')}${btn('out','','Sair')}`:btn('go','login','Entrar','pri')}`:''}</nav></header><main>${msg?`<div class="msg" role="status">${esc(msg)}</div>`:''}${mainContent}</main>${waitingChat?renderPopupModal(waitingChat):''}${demoUnlocked&&showSpecHeader&&pg!=='especialista'?'<button class="fab" data-a="go" data-v="especialista" aria-label="Falar com o especialista">💬</button>':''}`;
+$('#app').innerHTML=`<header><span class="brand"><span class="logo">S</span>Syntra Solutions<small>/ Prisma Portal</small></span><nav>${btn('go','home','Serviços','lk')}${showSpecHeader?btn('go','especialista','Falar com o especialista','lk'):''}${btn('go','carrinho','Carrinho ('+cart.reduce((s,x)=>s+x.q,0)+')','lk')}${u&&!st?btn('go','pedidos','Meus pedidos','lk'):''}${st?btn('go','portal','Portal','lk')+btn('bp','','Bater ponto','lk'):''}${u?`<span class="mu">${esc(u.nome)} (${RN[u.role]})</span>${btn('go','pw','Alterar senha','lk')}${btn('out','','Sair')}`:btn('go','login','Entrar','pri')}</nav></header><main>${msg?`<div class="msg" role="status">${esc(msg)}</div>`:''}${mainContent}</main>${pendingUserEmail ? renderPinModal() : ''}${waitingChat ? renderPopupModal(waitingChat) : ''}${showSpecHeader&&pg!=='especialista'?'<button class="fab" data-a="go" data-v="especialista" aria-label="Falar com o especialista">💬</button>':''}`;
 
 msg='';const n=$('#ci');if(n&&cv){n.value=cv;n.focus()}const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
 
 async function act(a,v){
 const P=S.get('pedidos',[]),setP=()=>S.set('pedidos',P),o=P.find(x=>x.id==v),u=usr();
 switch(a){
-case 'quick':{
-  const [e,p] = v.split('|');
-  const emInput = $('#loginEmail'), pwInput = $('#loginPw');
-  if(emInput && pwInput){ emInput.value = e; pwInput.value = p; }
+case 'cancel_pin':
+  pendingUserEmail = null;
+  currentValidationPin = null;
+  msg = 'Validação cancelada.';
   break;
-}
 case 'go':pg=v;if(v==='portal')rt='';break;
 case 'rt':rt=v;break;
 case 'sel':sel=+v;break;
@@ -264,20 +262,31 @@ case 'dismiss_pop':dismissedPopups.add(+v);break;
 
 async function submit(f){
 const d=f.dataset.f,u=usr();
-if(d==='pin'){
-  if(f.pin.value.trim()===DEMO_PIN){
-    demoUnlocked = true;
-    try{sessionStorage.setItem('syntra_demo_unlocked','true')}catch(e){}
-    msg='Acesso liberado ao ambiente de demonstração.';
-  }else{
-    msg='Código de segurança inválido. Use o PIN demo: 123456';
+if(d==='login'){
+  const em=f.email.value.trim().toLowerCase(),L=S.get('lock',{}),k=L[em]||{n:0,t:0};
+  if(Date.now()<k.t){msg='Muitas tentativas. Aguarde 1 minuto.';return render()}
+  const x=U().find(y=>y.email===em&&y.ativo);
+  if(x&&await hs(f.pw.value,x.salt)===x.h){
+    delete L[em];S.set('lock',L);
+    currentValidationPin = generateRandomPin();
+    pendingUserEmail = em;
+  } else {
+    k.n++;if(k.n>=5){k.t=Date.now()+60000;k.n=0}L[em]=k;S.set('lock',L);msg='E-mail ou senha incorretos.';
   }
 }
-else if(d==='login'){const em=f.email.value.trim().toLowerCase(),L=S.get('lock',{}),k=L[em]||{n:0,t:0};
-if(Date.now()<k.t){msg='Muitas tentativas. Aguarde 1 minuto.';return render()}
-const x=U().find(y=>y.email===em&&y.ativo);
-if(x&&await hs(f.pw.value,x.salt)===x.h){delete L[em];S.set('lock',L);me=em;try{sessionStorage.setItem('et_me',em)}catch(e){}pg=x.role==='cliente'?'home':'portal';rt=''}
-else{k.n++;if(k.n>=5){k.t=Date.now()+60000;k.n=0}L[em]=k;S.set('lock',L);msg='E-mail ou senha incorretos.'}}
+else if(d==='validate_pin'){
+  if(f.pin.value.trim()===currentValidationPin && pendingUserEmail){
+    me = pendingUserEmail;
+    const x = U().find(y=>y.email===me);
+    pendingUserEmail = null;
+    currentValidationPin = null;
+    try{sessionStorage.setItem('et_me',me)}catch(e){}
+    pg=x.role==='cliente'?'home':'portal';rt='';
+    msg='Acesso validado com sucesso!';
+  } else {
+    msg='Código PIN incorreto. Tente novamente.';
+  }
+}
 else if(d==='reg'){const e=f.e.value.trim().toLowerCase(),L=U();
 if(L.find(x=>x.email===e))msg='Este e-mail já tem cadastro.';else if(!pwOk(f.p.value))msg='A senha precisa de 8+ caracteres, com letras e números.';
 else{L.push(await mk(e,f.n.value.trim(),'cliente',f.p.value,0,''));S.set('users',L);me=e;try{sessionStorage.setItem('et_me',e)}catch(x){}pg='home';msg='Conta criada.'}}
@@ -296,7 +305,7 @@ render()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b)act(b.dataset.a,b.dataset.v)});
 document.addEventListener('submit',e=>{e.preventDefault();submit(e.target)});
 window.addEventListener('storage',()=>{const a=document.activeElement;if(!a||a.tagName!=='INPUT'||a.id==='ci')render()});
-(async()=>{if(!S.get('users')){const L=[];for(const s of SEED)L.push(await mk(...s));S.set('users',L)}render()})();
+(async()=>{if(!S.get('users')){S.set('users',SEED)}render()})();
 </script>
 </body>
 </html>
