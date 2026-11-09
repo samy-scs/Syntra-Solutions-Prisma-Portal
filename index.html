@@ -1,9 +1,13 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8">
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Syntra Solutions | Prisma Portal</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;600;800&display=swap" rel="stylesheet">
+<title>Syntra Solutions | Prisma Portal (Demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f6fb;--sf:#fff;--tx:#14142b;--mu:#5b5f7a;--ac:#5b3df5;--on:#fff;--am:#ffd54a;--dk:#16134a;--lm:#22d3ee;--bd:#e2e2f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0b1f;--sf:#16153a;--tx:#ecebff;--mu:#a5a8cc;--ac:#8b7bff;--on:#0c0b1f;--bd:#2a2960;--dk:#1b1855;color-scheme:dark}}
@@ -66,9 +70,15 @@ aside .b.on{background:var(--ac);color:var(--on)}
 .popup-card{background:var(--sf);border:2px solid var(--ac);border-radius:20px;padding:1.5rem;max-width:400px;width:90%;box-shadow:0 10px 25px rgba(0,0,0,.3);text-align:center}
 .popup-card h3{margin-top:0;color:var(--ac)}
 .popup-actions{display:flex;gap:.5rem;justify-content:center;margin-top:1rem}
-</style></head><body>
+.demo-bar{background:rgba(91,61,245,0.15);border:1px solid var(--ac);border-radius:12px;padding:.75rem 1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:space-between}
+.demo-bar p{margin:0;font-size:.85rem;color:var(--tx)}
+.quick-btns{display:flex;gap:.35rem;flex-wrap:wrap}
+</style>
+</head>
+<body>
 <div id="app"></div>
 <script>
+const DEMO_PIN = "123456"; // PIN de Segurança da Demonstração
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const R=n=>'R$ '+Number(n).toFixed(2).replace('.',',');
@@ -82,8 +92,15 @@ const RN={adm:'Administrador',rh:'RH',fin:'Financeiro',cont:'Contabilidade',cola
 const G={ponto:['Gestão de ponto',['Controle de ponto','Registrar ponto','Ajustar ponto','Holerite','Escala']],prod:['Gestão de produto',['Pedidos','Contratados','Gerar NF','Estoque','Saldo CNPJ']],rh:['RH',['Folha de ponto de todos','Ajuste de ponto de todos','Admissão/Demissão','Exame admissional','Exame demissional','Departamento pessoal','Holerite de todos','Gestão de documentos']],fin:['Financeiro',['Aprovar pedidos','Valores a receber','Pedidos de clientes','Recebimento de valores','Valores aprovados']],cont:['Contabilidade',['Salário dos funcionários','Valores recebidos','Saldo CNPJ','Repasse de valores']],atend:['Atendimento ao cliente',['Chat','Produtos','Aceitar atendimento','Encerrar atendimento']],banco_dados:['Banco de dados',['Contratações dos clientes']]};
 G.inicio=['Início',['Painel','Feed']];for(const k in ROLES)ROLES[k].unshift('inicio');
 G.seg=['Segurança',['Redefinir senhas']];ROLES.adm.push('seg');
+
 let tab='emp',me=null,pg='home',rt='',sel=null,msg='',dismissedPopups=new Set(),cart=S.get('cart',[]);
-try{me=sessionStorage.getItem('et_me')}catch(e){}
+let demoUnlocked = false;
+
+try{
+  me=sessionStorage.getItem('et_me');
+  demoUnlocked = sessionStorage.getItem('syntra_demo_unlocked') === 'true';
+}catch(e){}
+
 const U=()=>S.get('users',[]);
 const usr=()=>U().find(u=>u.email===me&&u.ativo);
 const name=e=>(U().find(x=>x.email===e)||{}).nome||e;
@@ -143,6 +160,21 @@ function portal(u){
 const gs=ROLES[u.role]||[];if(!rt)rt=gs[0]+':'+G[gs[0]][1][0];const [rg,ri]=rt.split(':');
 return `<div class="lay"><aside>${gs.map(g=>`<h3>${G[g][0]}</h3>${G[g][1].map(i=>`<button class="b ${rt===g+':'+i?'on':''}" data-a="rt" data-v="${g}:${i}">${i}</button>`).join('')}`).join('')}</aside><section><h2>${ri}</h2>${item(ri)}</section></div>`}
 
+function gatekeeperCard(){
+  return `<section class="hs">
+    <div>
+      <h1>🔒 <b>Acesso Restrito</b> — Demo</h1>
+      <p>Este portal é um ambiente interativo de demonstração corporativa. Insira o código de segurança para liberar o teste.</p>
+      <form data-f="pin" style="margin-top:1.5rem">
+        <label style="color:#fff">Código de Segurança (PIN Demo):
+          <input type="password" name="pin" placeholder="Digite o PIN (123456)" required autocomplete="off" style="max-width:260px">
+        </label>
+        <button class="b dk" style="margin-top:.5rem">Validar Acesso</button>
+      </form>
+    </div>
+  </section>`;
+}
+
 function site(u){
 if(pg==='carrinho')return `<h2>Carrinho</h2>`+tbl(['Serviço','Qtd','Preço',''],cart.map((x,i)=>[esc(x.n),x.q,R(x.p*x.q),btn('rm',i,'Remover')]))+(cart.length?`<p>Total: <b>${R(cart.reduce((s,x)=>s+x.p*x.q,0))}</b></p>`+btn('checkout','','Contratar','pri'):'')+`<p class="mu">Os pedidos passam pela aprovação do financeiro.</p>`;
 if(pg==='pedidos'){const P=S.get('pedidos',[]).filter(o=>o.cli===me);return `<h2>Meus pedidos</h2>`+tbl(['Pedido','Itens','Total','Status'],P.map(o=>['#'+o.id,esc(o.itens.map(i=>i.q+'x '+i.n).join(', ')),R(o.total),o.st+(o.nf?' (NF '+o.nf+')':'')]))}
@@ -151,7 +183,24 @@ const c=S.get('chats',[]).filter(c=>c.cli===me).pop();
 if(!c||c.st==='Encerrado')return `<h2>Falar com o especialista</h2>${c?'<p class="mu">Seu último atendimento foi encerrado.</p>':''}<p>Um colaborador responde assim que aceitar sua conversa.</p>`+btn('chat','','Iniciar conversa','pri');
 return `<h2>Falar com o especialista</h2><p class="mu">${c.st==='Aguardando'?'Aguardando um colaborador aceitar.':'Atendido por '+esc(name(c.ag))+'.'}</p>`+chatBox(c,true)}
 if(pg==='pw')return `<h2>Alterar senha</h2><form data-f="pw"><label>Senha atual<input type="password" name="a" required autocomplete="current-password"></label><label>Nova senha (8+ caracteres, letras e números)<input type="password" name="n" required minlength="8" autocomplete="new-password"></label><label>Confirmar nova senha<input type="password" name="c" required autocomplete="new-password"></label><button class="b pri">Salvar nova senha</button></form>`;
-if(pg==='login')return `<h2>Entrar</h2><form data-f="login"><label>E-mail<input type="email" name="email" required autocomplete="username"></label><label>Senha<input type="password" name="pw" required autocomplete="current-password"></label><button class="b pri">Entrar</button></form><p>Ainda não tem conta? ${btn('go','cadastro','Criar conta','lk')}</p>`;
+if(pg==='login'){
+  return `<div class="demo-bar">
+    <p>🧪 <b>Acesso Rápido de Teste:</b></p>
+    <div class="quick-btns">
+      ${btn('quick','cliente@teste.com|Cliente@12345','👤 Cliente','b')}
+      ${btn('quick','rh@teste.com|Rh@12345','📋 RH','b')}
+      ${btn('quick','fin@teste.com|Fin@12345','💰 Financeiro','b')}
+      ${btn('quick','adm@teste.com|Adm@12345','⚙️ Admin','b')}
+    </div>
+  </div>
+  <h2>Entrar</h2>
+  <form data-f="login" id="loginForm">
+    <label>E-mail<input type="email" id="loginEmail" name="email" required autocomplete="username"></label>
+    <label>Senha<input type="password" id="loginPw" name="pw" required autocomplete="current-password"></label>
+    <button class="b pri">Entrar</button>
+  </form>
+  <p>Ainda não tem conta? ${btn('go','cadastro','Criar conta','lk')}</p>`;
+}
 if(pg==='cadastro')return `<h2>Criar conta de cliente</h2><form data-f="reg"><label>Nome<input name="n" required maxlength="80"></label><label>E-mail<input type="email" name="e" required></label><label>Senha (8+ caracteres, letras e números)<input type="password" name="p" required minlength="8" autocomplete="new-password"></label><button class="b pri">Criar conta</button></form>`;
 return `<section class="hs"><div><h1>Menos burocracia, <b>muito mais resultado</b> para a sua empresa</h1><p>Ponto, folha, financeiro e contabilidade em um só portal. Contrate, acompanhe e fale com um especialista sem sair do site.</p><div class="row">${btn('go','carrinho','Quero contratar','dk')}${btn('go','especialista','Falar com o especialista','')}</div></div><div class="vis" aria-hidden="true"><div class="phone"><b>Prisma Portal</b><div><span>Pedidos aprovados</span><span>R$ 4.200,00</span></div><div><span>A receber</span><span>R$ 1.500,00</span></div><div><span>Atendimentos</span><span>3 abertos</span></div><div><span>NF emitidas</span><span>12</span></div></div></div></section><div class="promo"><div><h2>Feche o mês sem correria!</h2><p style="margin:.25rem 0 0">Folha, holerite e contabilidade acompanhados no Prisma Portal.</p></div>${btn('go','carrinho','Ver meu carrinho','pri')}</div><div class="grid">${[['Gestão de ponto','Registro, ajustes e escala em poucos cliques.'],['RH digital','Admissão, demissão, exames e documentos.'],['Financeiro','Aprovação de pedidos e controle de recebimentos.'],['Contabilidade','Salários, repasses e saldo do CNPJ.']].map(x=>`<div class="card"><h3>${x[0]}</h3><p class="mu">${x[1]}</p></div>`).join('')}</div><div class="tabs">${btn('tab','emp','Para o empregador',tab==='emp'?'pri':'')}${btn('tab','trab','Para o trabalhador',tab==='trab'?'pri':'')}</div><div class="tab2"><ul class="ft">${(tab==='emp'?['Ponto, folha e documentos no mesmo portal.','Pedidos aprovados pelo financeiro e NF emitida pelo adm.','Atendimento humano por chat, direto no site.','Acompanhamento de pedidos e valores em tempo real.']:['Registre o ponto e peça ajustes sem papel.','Consulte holerite e escala quando quiser.','Acompanhe atendimentos no painel e no feed.','Altere sua senha com segurança a qualquer hora.']).map(x=>`<li>${x}</li>`).join('')}</ul><div class="gp"><div class="badge">100%<span>digital, do pedido à nota fiscal.</span></div></div></div><h2 style="margin-top:2rem">Nossos serviços</h2><div class="grid">${CAT.map(x=>`<div class="card"><h3>${esc(x.n)}</h3><p class="mu">${esc(x.d)}</p><div class="pr">${R(x.p)}</div>${btn('add',x.id,'Adicionar ao carrinho','pri')}</div>`).join('')}</div>`}
 
@@ -166,12 +215,28 @@ const showSpecHeader = !u || u.role === 'cliente';
 const C=S.get('chats',[]);
 const waitingChat = (st && (u.role==='colab'||u.role==='adm')) ? C.find(c=>c.st==='Aguardando' && !dismissedPopups.has(c.id) && (!c.adm||u.role==='adm')) : null;
 
-$('#app').innerHTML=`<header><span class="brand"><span class="logo">S</span>Syntra Solutions<small>/ Prisma Portal</small></span><nav>${btn('go','home','Serviços','lk')}${showSpecHeader?btn('go','especialista','Falar com o especialista','lk'):''}${btn('go','carrinho','Carrinho ('+cart.reduce((s,x)=>s+x.q,0)+')','lk')}${u&&!st?btn('go','pedidos','Meus pedidos','lk'):''}${st?btn('go','portal','Portal','lk')+btn('bp','','Bater ponto','lk'):''}${u?`<span class="mu">${esc(u.nome)} (${RN[u.role]})</span>${btn('go','pw','Alterar senha','lk')}${btn('out','','Sair')}`:btn('go','login','Entrar','pri')}</nav></header><main>${msg?`<div class="msg" role="status">${esc(msg)}</div>`:''}${pg==='portal'&&st?portal(u):site(u)}</main>${waitingChat?renderPopupModal(waitingChat):''}${showSpecHeader&&pg!=='especialista'?'<button class="fab" data-a="go" data-v="especialista" aria-label="Falar com o especialista">💬</button>':''}`;
+let mainContent = '';
+if (!demoUnlocked) {
+  mainContent = gatekeeperCard();
+} else if (pg==='portal'&&st) {
+  mainContent = portal(u);
+} else {
+  mainContent = site(u);
+}
+
+$('#app').innerHTML=`<header><span class="brand"><span class="logo">S</span>Syntra Solutions<small>/ Prisma Portal</small></span><nav>${demoUnlocked?`${btn('go','home','Serviços','lk')}${showSpecHeader?btn('go','especialista','Falar com o especialista','lk'):''}${btn('go','carrinho','Carrinho ('+cart.reduce((s,x)=>s+x.q,0)+')','lk')}${u&&!st?btn('go','pedidos','Meus pedidos','lk'):''}${st?btn('go','portal','Portal','lk')+btn('bp','','Bater ponto','lk'):''}${u?`<span class="mu">${esc(u.nome)} (${RN[u.role]})</span>${btn('go','pw','Alterar senha','lk')}${btn('out','','Sair')}`:btn('go','login','Entrar','pri')}`:''}</nav></header><main>${msg?`<div class="msg" role="status">${esc(msg)}</div>`:''}${mainContent}</main>${waitingChat?renderPopupModal(waitingChat):''}${demoUnlocked&&showSpecHeader&&pg!=='especialista'?'<button class="fab" data-a="go" data-v="especialista" aria-label="Falar com o especialista">💬</button>':''}`;
+
 msg='';const n=$('#ci');if(n&&cv){n.value=cv;n.focus()}const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
 
 async function act(a,v){
 const P=S.get('pedidos',[]),setP=()=>S.set('pedidos',P),o=P.find(x=>x.id==v),u=usr();
 switch(a){
+case 'quick':{
+  const [e,p] = v.split('|');
+  const emInput = $('#loginEmail'), pwInput = $('#loginPw');
+  if(emInput && pwInput){ emInput.value = e; pwInput.value = p; }
+  break;
+}
 case 'go':pg=v;if(v==='portal')rt='';break;
 case 'rt':rt=v;break;
 case 'sel':sel=+v;break;
@@ -199,7 +264,16 @@ case 'dismiss_pop':dismissedPopups.add(+v);break;
 
 async function submit(f){
 const d=f.dataset.f,u=usr();
-if(d==='login'){const em=f.email.value.trim().toLowerCase(),L=S.get('lock',{}),k=L[em]||{n:0,t:0};
+if(d==='pin'){
+  if(f.pin.value.trim()===DEMO_PIN){
+    demoUnlocked = true;
+    try{sessionStorage.setItem('syntra_demo_unlocked','true')}catch(e){}
+    msg='Acesso liberado ao ambiente de demonstração.';
+  }else{
+    msg='Código de segurança inválido. Use o PIN demo: 123456';
+  }
+}
+else if(d==='login'){const em=f.email.value.trim().toLowerCase(),L=S.get('lock',{}),k=L[em]||{n:0,t:0};
 if(Date.now()<k.t){msg='Muitas tentativas. Aguarde 1 minuto.';return render()}
 const x=U().find(y=>y.email===em&&y.ativo);
 if(x&&await hs(f.pw.value,x.salt)===x.h){delete L[em];S.set('lock',L);me=em;try{sessionStorage.setItem('et_me',em)}catch(e){}pg=x.role==='cliente'?'home':'portal';rt=''}
@@ -223,4 +297,6 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b)
 document.addEventListener('submit',e=>{e.preventDefault();submit(e.target)});
 window.addEventListener('storage',()=>{const a=document.activeElement;if(!a||a.tagName!=='INPUT'||a.id==='ci')render()});
 (async()=>{if(!S.get('users')){const L=[];for(const s of SEED)L.push(await mk(...s));S.set('users',L)}render()})();
-</script></body></html>
+</script>
+</body>
+</html>
