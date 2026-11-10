@@ -76,7 +76,6 @@ aside .b.on{background:var(--ac);color:var(--on)}
 <body>
 <div id="app"></div>
 <script>
-// Gerador de PIN aleatório de 6 dígitos
 const generateRandomPin = () => Math.floor(100000 + Math.random() * 900000).toString();
 let currentValidationPin = null;
 
@@ -87,17 +86,7 @@ const dt=t=>new Date(t).toLocaleString('pt-BR');
 const mem={};
 const S={get(k,d){try{const v=localStorage.getItem('et_'+k);return v===null?(k in mem?mem[k]:d):JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},set(k,v){mem[k]=v;try{localStorage.setItem('et_'+k,JSON.stringify(v))}catch(e){}}};
 const CAT=[{id:1,n:'Consultoria empresarial',p:1500,d:'Diagnóstico e plano de crescimento para sua empresa.'},{id:2,n:'Gestão de folha e RH',p:900,d:'Ponto, holerites e admissões com acompanhamento.'},{id:3,n:'Contabilidade mensal',p:700,d:'Fechamento, impostos e relatórios todo mês.'},{id:4,n:'Desenvolvimento de sistemas',p:3200,d:'Sites e sistemas sob medida, com suporte.'}];
-
-// Dados pré-calculados em SHA-256 (NENHUMA SENHA EM TEXTO PURO)
-const SEED=[
-  {email:'adm@teste.com',nome:'Administrador',role:'adm',salt:'s_adm1',h:'02c2e08cb0aef044f5bd634fa6cfc98782a17efc902eb9ed9ce137e3ec204ee5',sal:9000,cargo:'Administrador',ativo:true},
-  {email:'rh@teste.com',nome:'Maria (RH)',role:'rh',salt:'s_rh2',h:'e0004ffefc8bd1fd087198bbda38ed9e2bf4df8b394fe709ff38ff8e3e4df8b5',sal:4500,cargo:'Analista de RH',ativo:true},
-  {email:'fin@teste.com',nome:'Paulo (Financeiro)',role:'fin',salt:'s_fin3',h:'687d60ff3f69b5fc8beecff1d957597148eb84ee2fa7aeaa2d069e2c65a7df49',sal:4800,cargo:'Analista financeiro',ativo:true},
-  {email:'cont@teste.com',nome:'Ana (Contabilidade)',role:'cont',salt:'s_cont4',h:'5d2aa1f52b752bc86fc903a492f25b2ec62a938634887aebe67c4623707ce1e1',sal:4600,cargo:'Contadora',ativo:true},
-  {email:'colab@teste.com',nome:'Carlos (Colaborador)',role:'colab',salt:'s_colab5',h:'0fb68e4c7fb3817300c0117ffbeab3fcfeb758aeb64fa7eefcdbeffecba67e9f',sal:3200,cargo:'Atendente',ativo:true},
-  {email:'cliente@teste.com',nome:'Cliente Teste',role:'cliente',salt:'s_cli6',h:'2448ca33dffb1c0ea453b3b4f620e7df66ee5c6ef02ed7ed4be0fbcbc717fa00',sal:0,cargo:'',ativo:true}
-];
-
+const SEED_RAW=[['adm@teste.com','Administrador','adm','Adm@12345',9000,'Administrador'],['rh@teste.com','Maria (RH)','rh','Rh@12345',4500,'Analista de RH'],['fin@teste.com','Paulo (Financeiro)','fin','Fin@12345',4800,'Analista financeiro'],['cont@teste.com','Ana (Contabilidade)','cont','Cont@12345',4600,'Contadora'],['colab@teste.com','Carlos (Colaborador)','colab','Colab@12345',3200,'Atendente'],['cliente@teste.com','Cliente Teste','cliente','Cliente@12345',0,'']];
 const ROLES={adm:['ponto','prod','rh','fin','cont','atend'],rh:['ponto','rh'],fin:['ponto','fin'],cont:['ponto','cont'],colab:['ponto','atend','banco_dados']};
 const RN={adm:'Administrador',rh:'RH',fin:'Financeiro',cont:'Contabilidade',colab:'Colaborador',cliente:'Cliente'};
 const G={ponto:['Gestão de ponto',['Controle de ponto','Registrar ponto','Ajustar ponto','Holerite','Escala']],prod:['Gestão de produto',['Pedidos','Contratados','Gerar NF','Estoque','Saldo CNPJ']],rh:['RH',['Folha de ponto de todos','Ajuste de ponto de todos','Admissão/Demissão','Exame admissional','Exame demissional','Departamento pessoal','Holerite de todos','Gestão de documentos']],fin:['Financeiro',['Aprovar pedidos','Valores a receber','Pedidos de clientes','Recebimento de valores','Valores aprovados']],cont:['Contabilidade',['Salário dos funcionários','Valores recebidos','Saldo CNPJ','Repasse de valores']],atend:['Atendimento ao cliente',['Chat','Produtos','Aceitar atendimento','Encerrar atendimento']],banco_dados:['Banco de dados',['Contratações dos clientes']]};
@@ -107,11 +96,9 @@ G.seg=['Segurança',['Redefinir senhas']];ROLES.adm.push('seg');
 let tab='emp',me=null,pg='home',rt='',sel=null,msg='',dismissedPopups=new Set(),cart=S.get('cart',[]);
 let pendingUserEmail = null;
 
-try{
-  me=sessionStorage.getItem('et_me');
-}catch(e){}
+try{ me=sessionStorage.getItem('et_me'); }catch(e){}
 
-const U=()=>S.get('users',SEED);
+const U=()=>S.get('users',[]);
 const usr=()=>U().find(u=>u.email===me&&u.ativo);
 const name=e=>(U().find(x=>x.email===e)||{}).nome||e;
 async function hs(p,s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s+p));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -305,7 +292,12 @@ render()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b)act(b.dataset.a,b.dataset.v)});
 document.addEventListener('submit',e=>{e.preventDefault();submit(e.target)});
 window.addEventListener('storage',()=>{const a=document.activeElement;if(!a||a.tagName!=='INPUT'||a.id==='ci')render()});
-(async()=>{if(!S.get('users')){S.set('users',SEED)}render()})();
+(async()=>{
+  // Força o cálculo assíncrono correto antes de salvar
+  const L=[]; for(const s of SEED_RAW) L.push(await mk(...s));
+  S.set('users',L);
+  render();
+})();
 </script>
 </body>
 </html>
