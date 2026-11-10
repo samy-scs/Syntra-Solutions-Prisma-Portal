@@ -1,9 +1,13 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8">
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Syntra Solutions | Prisma Portal</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;600;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f6fb;--sf:#fff;--tx:#14142b;--mu:#5b5f7a;--ac:#5b3df5;--on:#fff;--am:#ffd54a;--dk:#16134a;--lm:#22d3ee;--bd:#e2e2f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0b1f;--sf:#16153a;--tx:#ecebff;--mu:#a5a8cc;--ac:#8b7bff;--on:#0c0b1f;--bd:#2a2960;--dk:#1b1855;color-scheme:dark}}
@@ -62,13 +66,19 @@ aside .b.on{background:var(--ac);color:var(--on)}
 .m.me{margin-left:auto;background:var(--ac);color:var(--on)}.m.me b{color:var(--on)}
 .row{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
 .test{font-size:.9rem}.test td{padding:.25rem .5rem}
-.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999}
-.popup-card{background:var(--sf);border:2px solid var(--ac);border-radius:20px;padding:1.5rem;max-width:400px;width:90%;box-shadow:0 10px 25px rgba(0,0,0,.3);text-align:center}
+.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9999}
+.popup-card{background:var(--sf);border:2px solid var(--ac);border-radius:20px;padding:1.5rem;max-width:420px;width:90%;box-shadow:0 10px 25px rgba(0,0,0,.3);text-align:center}
 .popup-card h3{margin-top:0;color:var(--ac)}
 .popup-actions{display:flex;gap:.5rem;justify-content:center;margin-top:1rem}
-</style></head><body>
+.pin-display{background:var(--dk);color:var(--lm);font-size:1.8rem;font-weight:800;letter-spacing:4px;padding:.5rem 1rem;border-radius:12px;margin:1rem 0;display:inline-block;border:1px dashed var(--lm)}
+</style>
+</head>
+<body>
 <div id="app"></div>
 <script>
+const generateRandomPin = () => Math.floor(100000 + Math.random() * 900000).toString();
+let currentValidationPin = null;
+
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const R=n=>'R$ '+Number(n).toFixed(2).replace('.',',');
@@ -76,14 +86,18 @@ const dt=t=>new Date(t).toLocaleString('pt-BR');
 const mem={};
 const S={get(k,d){try{const v=localStorage.getItem('et_'+k);return v===null?(k in mem?mem[k]:d):JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},set(k,v){mem[k]=v;try{localStorage.setItem('et_'+k,JSON.stringify(v))}catch(e){}}};
 const CAT=[{id:1,n:'Consultoria empresarial',p:1500,d:'Diagnóstico e plano de crescimento para sua empresa.'},{id:2,n:'Gestão de folha e RH',p:900,d:'Ponto, holerites e admissões com acompanhamento.'},{id:3,n:'Contabilidade mensal',p:700,d:'Fechamento, impostos e relatórios todo mês.'},{id:4,n:'Desenvolvimento de sistemas',p:3200,d:'Sites e sistemas sob medida, com suporte.'}];
-const SEED=[['adm@teste.com','Administrador','adm','Adm@12345',9000,'Administrador'],['rh@teste.com','Maria (RH)','rh','Rh@12345',4500,'Analista de RH'],['fin@teste.com','Paulo (Financeiro)','fin','Fin@12345',4800,'Analista financeiro'],['cont@teste.com','Ana (Contabilidade)','cont','Cont@12345',4600,'Contadora'],['colab@teste.com','Carlos (Colaborador)','colab','Colab@12345',3200,'Atendente'],['cliente@teste.com','Cliente Teste','cliente','Cliente@12345',0,'']];
+const SEED_RAW=[['adm@teste.com','Administrador','adm','Adm@12345',9000,'Administrador'],['rh@teste.com','Maria (RH)','rh','Rh@12345',4500,'Analista de RH'],['fin@teste.com','Paulo (Financeiro)','fin','Fin@12345',4800,'Analista financeiro'],['cont@teste.com','Ana (Contabilidade)','cont','Cont@12345',4600,'Contadora'],['colab@teste.com','Carlos (Colaborador)','colab','Colab@12345',3200,'Atendente'],['cliente@teste.com','Cliente Teste','cliente','Cliente@12345',0,'']];
 const ROLES={adm:['ponto','prod','rh','fin','cont','atend'],rh:['ponto','rh'],fin:['ponto','fin'],cont:['ponto','cont'],colab:['ponto','atend','banco_dados']};
 const RN={adm:'Administrador',rh:'RH',fin:'Financeiro',cont:'Contabilidade',colab:'Colaborador',cliente:'Cliente'};
 const G={ponto:['Gestão de ponto',['Controle de ponto','Registrar ponto','Ajustar ponto','Holerite','Escala']],prod:['Gestão de produto',['Pedidos','Contratados','Gerar NF','Estoque','Saldo CNPJ']],rh:['RH',['Folha de ponto de todos','Ajuste de ponto de todos','Admissão/Demissão','Exame admissional','Exame demissional','Departamento pessoal','Holerite de todos','Gestão de documentos']],fin:['Financeiro',['Aprovar pedidos','Valores a receber','Pedidos de clientes','Recebimento de valores','Valores aprovados']],cont:['Contabilidade',['Salário dos funcionários','Valores recebidos','Saldo CNPJ','Repasse de valores']],atend:['Atendimento ao cliente',['Chat','Produtos','Aceitar atendimento','Encerrar atendimento']],banco_dados:['Banco de dados',['Contratações dos clientes']]};
 G.inicio=['Início',['Painel','Feed']];for(const k in ROLES)ROLES[k].unshift('inicio');
 G.seg=['Segurança',['Redefinir senhas']];ROLES.adm.push('seg');
+
 let tab='emp',me=null,pg='home',rt='',sel=null,msg='',dismissedPopups=new Set(),cart=S.get('cart',[]);
-try{me=sessionStorage.getItem('et_me')}catch(e){}
+let pendingUserEmail = null;
+
+try{ me=sessionStorage.getItem('et_me'); }catch(e){}
+
 const U=()=>S.get('users',[]);
 const usr=()=>U().find(u=>u.email===me&&u.ativo);
 const name=e=>(U().find(x=>x.email===e)||{}).nome||e;
@@ -101,6 +115,7 @@ function saldo(){const P=S.get('pedidos',[]),rec=money(P.filter(o=>o.rec)),fol=U
 
 const feedList=F=>F.length?F.map(x=>`<div class="card" style="margin:.5rem 0"><b>${esc(name(x.e))}</b> <span class="mu">${dt(x.ts)}</span><p style="margin:.25rem 0 0">${esc(x.t)}</p></div>`).join(''):'<p class="mu">Nada no feed ainda.</p>';
 const fd=t=>{const F=S.get('feed',[]);F.push({e:me,t,ts:Date.now()});S.set('feed',F.slice(-100))};
+
 function item(n){
 const u=usr(),P=S.get('pedidos',[]),E=U().filter(x=>x.role!=='cliente'),T=S.get('ponto',[]),A=S.get('ajustes',[]),C=S.get('chats',[]);
 const orders=(f,acts)=>tbl(['Pedido','Cliente','Itens','Total','Status',''],P.filter(f).map(o=>['#'+o.id,esc(o.nome),esc(o.itens.map(i=>i.q+'x '+i.n).join(', ')),R(o.total),o.st+(o.rec?' (recebido)':''),acts?acts(o):'']));
@@ -129,7 +144,7 @@ case 'Valores a receber':return orders(o=>o.st==='Aprovado'&&!o.rec,o=>btn('recv
 case 'Recebimento de valores':case 'Valores recebidos':return orders(o=>o.rec);
 case 'Valores aprovados':return `<p>Total aprovado: <b>${R(money(P.filter(o=>o.st==='Aprovado')))}</b></p>`+orders(o=>o.st==='Aprovado');
 case 'Salário dos funcionários':return tbl(['Funcionário','Cargo','Salário'],E.filter(x=>x.ativo).map(x=>[esc(x.nome),esc(x.cargo),R(x.sal||0)]));
-case 'Admissão/Demissão':return `<form data-f="admit"><label>Nome<input name="n" required maxlength="80"></label><label>E-mail<input name="e" type="email" required></label><label>Cargo<input name="c" required maxlength="60"></label><label>Salário<input name="s" type="number" min="0" step="0.01" required></label><label>Setor de acesso<select name="r"><option value="colab">Colaborador</option><option value="rh">RH</option><option value="fin">Financeiro</option><option value="cont">Contabilidade</option></select></label><p class="mu">Senha inicial: Trocar@123 (o funcionário deve alterá-la).</p><button class="b pri">Admitir</button></form>`+tbl(['Nome','Cargo','Setor','Situação',''],E.map(x=>[esc(x.nome),esc(x.cargo),RN[x.role],x.ativo?'Ativo':'Desligado',x.ativo&&x.email!==me?btn('dem',x.email,'Demitir'):'']));
+case 'Admissão/Demissão':return `<form data-f="admit"><label>Nome<input name="n" required maxlength="80"></label><label>E-mail<input name="e" type="email" required></label><label>Cargo<input name="c" required maxlength="60"></label><label>Salário<input name="s" type="number" min="0" step="0.01" required></label><label>Setor de acesso<select name="r"><option value="colab">Colaborador</option><option value="rh">RH</option><option value="fin">Financeiro</option><option value="cont">Contabilidade</option></select></label><p class="mu">Senha inicial pré-configurada.</p><button class="b pri">Admitir</button></form>`+tbl(['Nome','Cargo','Setor','Situação',''],E.map(x=>[esc(x.nome),esc(x.cargo),RN[x.role],x.ativo?'Ativo':'Desligado',x.ativo&&x.email!==me?btn('dem',x.email,'Demitir'):'']));
 case 'Exame admissional':return exam('adm');
 case 'Exame demissional':return exam('dem');
 case 'Produtos':return tbl(['Serviço','Descrição','Preço'],CAT.map(x=>[esc(x.n),esc(x.d),R(x.p)]));
@@ -143,6 +158,25 @@ function portal(u){
 const gs=ROLES[u.role]||[];if(!rt)rt=gs[0]+':'+G[gs[0]][1][0];const [rg,ri]=rt.split(':');
 return `<div class="lay"><aside>${gs.map(g=>`<h3>${G[g][0]}</h3>${G[g][1].map(i=>`<button class="b ${rt===g+':'+i?'on':''}" data-a="rt" data-v="${g}:${i}">${i}</button>`).join('')}`).join('')}</aside><section><h2>${ri}</h2>${item(ri)}</section></div>`}
 
+function renderPinModal(){
+  return `<div class="popup-overlay">
+    <div class="popup-card">
+      <h3>🔑 Validação de Segurança</h3>
+      <p>Um código de acesso temporário foi gerado para você liberar sua entrada:</p>
+      <div class="pin-display">${currentValidationPin}</div>
+      <form data-f="validate_pin">
+        <label>Digite o código PIN exibido acima:
+          <input type="password" name="pin" placeholder="••••••" required autocomplete="off" style="text-align:center;font-size:1.2rem;letter-spacing:2px">
+        </label>
+        <div class="popup-actions" style="margin-top:1.25rem">
+          <button class="b pri">Confirmar e Acessar</button>
+          ${btn('cancel_pin','','Cancelar','lk')}
+        </div>
+      </form>
+    </div>
+  </div>`;
+}
+
 function site(u){
 if(pg==='carrinho')return `<h2>Carrinho</h2>`+tbl(['Serviço','Qtd','Preço',''],cart.map((x,i)=>[esc(x.n),x.q,R(x.p*x.q),btn('rm',i,'Remover')]))+(cart.length?`<p>Total: <b>${R(cart.reduce((s,x)=>s+x.p*x.q,0))}</b></p>`+btn('checkout','','Contratar','pri'):'')+`<p class="mu">Os pedidos passam pela aprovação do financeiro.</p>`;
 if(pg==='pedidos'){const P=S.get('pedidos',[]).filter(o=>o.cli===me);return `<h2>Meus pedidos</h2>`+tbl(['Pedido','Itens','Total','Status'],P.map(o=>['#'+o.id,esc(o.itens.map(i=>i.q+'x '+i.n).join(', ')),R(o.total),o.st+(o.nf?' (NF '+o.nf+')':'')]))}
@@ -151,7 +185,15 @@ const c=S.get('chats',[]).filter(c=>c.cli===me).pop();
 if(!c||c.st==='Encerrado')return `<h2>Falar com o especialista</h2>${c?'<p class="mu">Seu último atendimento foi encerrado.</p>':''}<p>Um colaborador responde assim que aceitar sua conversa.</p>`+btn('chat','','Iniciar conversa','pri');
 return `<h2>Falar com o especialista</h2><p class="mu">${c.st==='Aguardando'?'Aguardando um colaborador aceitar.':'Atendido por '+esc(name(c.ag))+'.'}</p>`+chatBox(c,true)}
 if(pg==='pw')return `<h2>Alterar senha</h2><form data-f="pw"><label>Senha atual<input type="password" name="a" required autocomplete="current-password"></label><label>Nova senha (8+ caracteres, letras e números)<input type="password" name="n" required minlength="8" autocomplete="new-password"></label><label>Confirmar nova senha<input type="password" name="c" required autocomplete="new-password"></label><button class="b pri">Salvar nova senha</button></form>`;
-if(pg==='login')return `<h2>Entrar</h2><form data-f="login"><label>E-mail<input type="email" name="email" required autocomplete="username"></label><label>Senha<input type="password" name="pw" required autocomplete="current-password"></label><button class="b pri">Entrar</button></form><p>Ainda não tem conta? ${btn('go','cadastro','Criar conta','lk')}</p>`;
+if(pg==='login'){
+  return `<h2>Entrar no Sistema</h2>
+  <form data-f="login" id="loginForm">
+    <label>E-mail<input type="email" id="loginEmail" name="email" required autocomplete="username"></label>
+    <label>Senha<input type="password" id="loginPw" name="pw" required autocomplete="current-password"></label>
+    <button class="b pri">Entrar</button>
+  </form>
+  <p>Ainda não tem conta? ${btn('go','cadastro','Criar conta','lk')}</p>`;
+}
 if(pg==='cadastro')return `<h2>Criar conta de cliente</h2><form data-f="reg"><label>Nome<input name="n" required maxlength="80"></label><label>E-mail<input type="email" name="e" required></label><label>Senha (8+ caracteres, letras e números)<input type="password" name="p" required minlength="8" autocomplete="new-password"></label><button class="b pri">Criar conta</button></form>`;
 return `<section class="hs"><div><h1>Menos burocracia, <b>muito mais resultado</b> para a sua empresa</h1><p>Ponto, folha, financeiro e contabilidade em um só portal. Contrate, acompanhe e fale com um especialista sem sair do site.</p><div class="row">${btn('go','carrinho','Quero contratar','dk')}${btn('go','especialista','Falar com o especialista','')}</div></div><div class="vis" aria-hidden="true"><div class="phone"><b>Prisma Portal</b><div><span>Pedidos aprovados</span><span>R$ 4.200,00</span></div><div><span>A receber</span><span>R$ 1.500,00</span></div><div><span>Atendimentos</span><span>3 abertos</span></div><div><span>NF emitidas</span><span>12</span></div></div></div></section><div class="promo"><div><h2>Feche o mês sem correria!</h2><p style="margin:.25rem 0 0">Folha, holerite e contabilidade acompanhados no Prisma Portal.</p></div>${btn('go','carrinho','Ver meu carrinho','pri')}</div><div class="grid">${[['Gestão de ponto','Registro, ajustes e escala em poucos cliques.'],['RH digital','Admissão, demissão, exames e documentos.'],['Financeiro','Aprovação de pedidos e controle de recebimentos.'],['Contabilidade','Salários, repasses e saldo do CNPJ.']].map(x=>`<div class="card"><h3>${x[0]}</h3><p class="mu">${x[1]}</p></div>`).join('')}</div><div class="tabs">${btn('tab','emp','Para o empregador',tab==='emp'?'pri':'')}${btn('tab','trab','Para o trabalhador',tab==='trab'?'pri':'')}</div><div class="tab2"><ul class="ft">${(tab==='emp'?['Ponto, folha e documentos no mesmo portal.','Pedidos aprovados pelo financeiro e NF emitida pelo adm.','Atendimento humano por chat, direto no site.','Acompanhamento de pedidos e valores em tempo real.']:['Registre o ponto e peça ajustes sem papel.','Consulte holerite e escala quando quiser.','Acompanhe atendimentos no painel e no feed.','Altere sua senha com segurança a qualquer hora.']).map(x=>`<li>${x}</li>`).join('')}</ul><div class="gp"><div class="badge">100%<span>digital, do pedido à nota fiscal.</span></div></div></div><h2 style="margin-top:2rem">Nossos serviços</h2><div class="grid">${CAT.map(x=>`<div class="card"><h3>${esc(x.n)}</h3><p class="mu">${esc(x.d)}</p><div class="pr">${R(x.p)}</div>${btn('add',x.id,'Adicionar ao carrinho','pri')}</div>`).join('')}</div>`}
 
@@ -166,12 +208,20 @@ const showSpecHeader = !u || u.role === 'cliente';
 const C=S.get('chats',[]);
 const waitingChat = (st && (u.role==='colab'||u.role==='adm')) ? C.find(c=>c.st==='Aguardando' && !dismissedPopups.has(c.id) && (!c.adm||u.role==='adm')) : null;
 
-$('#app').innerHTML=`<header><span class="brand"><span class="logo">S</span>Syntra Solutions<small>/ Prisma Portal</small></span><nav>${btn('go','home','Serviços','lk')}${showSpecHeader?btn('go','especialista','Falar com o especialista','lk'):''}${btn('go','carrinho','Carrinho ('+cart.reduce((s,x)=>s+x.q,0)+')','lk')}${u&&!st?btn('go','pedidos','Meus pedidos','lk'):''}${st?btn('go','portal','Portal','lk')+btn('bp','','Bater ponto','lk'):''}${u?`<span class="mu">${esc(u.nome)} (${RN[u.role]})</span>${btn('go','pw','Alterar senha','lk')}${btn('out','','Sair')}`:btn('go','login','Entrar','pri')}</nav></header><main>${msg?`<div class="msg" role="status">${esc(msg)}</div>`:''}${pg==='portal'&&st?portal(u):site(u)}</main>${waitingChat?renderPopupModal(waitingChat):''}${showSpecHeader&&pg!=='especialista'?'<button class="fab" data-a="go" data-v="especialista" aria-label="Falar com o especialista">💬</button>':''}`;
+let mainContent = (pg==='portal'&&st) ? portal(u) : site(u);
+
+$('#app').innerHTML=`<header><span class="brand"><span class="logo">S</span>Syntra Solutions<small>/ Prisma Portal</small></span><nav>${btn('go','home','Serviços','lk')}${showSpecHeader?btn('go','especialista','Falar com o especialista','lk'):''}${btn('go','carrinho','Carrinho ('+cart.reduce((s,x)=>s+x.q,0)+')','lk')}${u&&!st?btn('go','pedidos','Meus pedidos','lk'):''}${st?btn('go','portal','Portal','lk')+btn('bp','','Bater ponto','lk'):''}${u?`<span class="mu">${esc(u.nome)} (${RN[u.role]})</span>${btn('go','pw','Alterar senha','lk')}${btn('out','','Sair')}`:btn('go','login','Entrar','pri')}</nav></header><main>${msg?`<div class="msg" role="status">${esc(msg)}</div>`:''}${mainContent}</main>${pendingUserEmail ? renderPinModal() : ''}${waitingChat ? renderPopupModal(waitingChat) : ''}${showSpecHeader&&pg!=='especialista'?'<button class="fab" data-a="go" data-v="especialista" aria-label="Falar com o especialista">💬</button>':''}`;
+
 msg='';const n=$('#ci');if(n&&cv){n.value=cv;n.focus()}const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight}
 
 async function act(a,v){
 const P=S.get('pedidos',[]),setP=()=>S.set('pedidos',P),o=P.find(x=>x.id==v),u=usr();
 switch(a){
+case 'cancel_pin':
+  pendingUserEmail = null;
+  currentValidationPin = null;
+  msg = 'Validação cancelada.';
+  break;
 case 'go':pg=v;if(v==='portal')rt='';break;
 case 'rt':rt=v;break;
 case 'sel':sel=+v;break;
@@ -199,11 +249,31 @@ case 'dismiss_pop':dismissedPopups.add(+v);break;
 
 async function submit(f){
 const d=f.dataset.f,u=usr();
-if(d==='login'){const em=f.email.value.trim().toLowerCase(),L=S.get('lock',{}),k=L[em]||{n:0,t:0};
-if(Date.now()<k.t){msg='Muitas tentativas. Aguarde 1 minuto.';return render()}
-const x=U().find(y=>y.email===em&&y.ativo);
-if(x&&await hs(f.pw.value,x.salt)===x.h){delete L[em];S.set('lock',L);me=em;try{sessionStorage.setItem('et_me',em)}catch(e){}pg=x.role==='cliente'?'home':'portal';rt=''}
-else{k.n++;if(k.n>=5){k.t=Date.now()+60000;k.n=0}L[em]=k;S.set('lock',L);msg='E-mail ou senha incorretos.'}}
+if(d==='login'){
+  const em=f.email.value.trim().toLowerCase(),L=S.get('lock',{}),k=L[em]||{n:0,t:0};
+  if(Date.now()<k.t){msg='Muitas tentativas. Aguarde 1 minuto.';return render()}
+  const x=U().find(y=>y.email===em&&y.ativo);
+  if(x&&await hs(f.pw.value,x.salt)===x.h){
+    delete L[em];S.set('lock',L);
+    currentValidationPin = generateRandomPin();
+    pendingUserEmail = em;
+  } else {
+    k.n++;if(k.n>=5){k.t=Date.now()+60000;k.n=0}L[em]=k;S.set('lock',L);msg='E-mail ou senha incorretos.';
+  }
+}
+else if(d==='validate_pin'){
+  if(f.pin.value.trim()===currentValidationPin && pendingUserEmail){
+    me = pendingUserEmail;
+    const x = U().find(y=>y.email===me);
+    pendingUserEmail = null;
+    currentValidationPin = null;
+    try{sessionStorage.setItem('et_me',me)}catch(e){}
+    pg=x.role==='cliente'?'home':'portal';rt='';
+    msg='Acesso validado com sucesso!';
+  } else {
+    msg='Código PIN incorreto. Tente novamente.';
+  }
+}
 else if(d==='reg'){const e=f.e.value.trim().toLowerCase(),L=U();
 if(L.find(x=>x.email===e))msg='Este e-mail já tem cadastro.';else if(!pwOk(f.p.value))msg='A senha precisa de 8+ caracteres, com letras e números.';
 else{L.push(await mk(e,f.n.value.trim(),'cliente',f.p.value,0,''));S.set('users',L);me=e;try{sessionStorage.setItem('et_me',e)}catch(x){}pg='home';msg='Conta criada.'}}
@@ -222,5 +292,12 @@ render()}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b)act(b.dataset.a,b.dataset.v)});
 document.addEventListener('submit',e=>{e.preventDefault();submit(e.target)});
 window.addEventListener('storage',()=>{const a=document.activeElement;if(!a||a.tagName!=='INPUT'||a.id==='ci')render()});
-(async()=>{if(!S.get('users')){const L=[];for(const s of SEED)L.push(await mk(...s));S.set('users',L)}render()})();
-</script></body></html>
+(async()=>{
+  // Força o cálculo assíncrono correto antes de salvar
+  const L=[]; for(const s of SEED_RAW) L.push(await mk(...s));
+  S.set('users',L);
+  render();
+})();
+</script>
+</body>
+</html>
